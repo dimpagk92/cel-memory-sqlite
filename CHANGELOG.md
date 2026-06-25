@@ -5,10 +5,19 @@ All notable changes to `cel-memory-sqlite` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Pre-`0.1.0` versions developed in-workspace; the first published crates.io
-release is `0.1.0`.
+Pre-1.0 releases were developed privately before the first public crates.io
+line at `0.1.5`.
 
 ## [Unreleased]
+
+## [0.1.6] — 2026-06-25
+
+### Added
+- Standalone GitHub repository at `https://github.com/dimpagk92/cel-memory-sqlite`.
+- Published as a standalone crate on crates.io.
+
+### Notes
+- `re_embed_all` remains unimplemented in this release.
 
 ## [0.1.0-pre] — 2026-05-23
 
@@ -33,7 +42,6 @@ release is `0.1.0`.
 - `SqliteMemoryError` — self-contained `thiserror` enum.
 
 ### Notes
-- Imports only `cel-memory` from the workspace — verified by
-  `scripts/lint-guard-extraction-crates.sh` (added 2026-05-23).
+- Imports only `cel-memory` from crates.io — no runtime-specific dependencies.
 - Runtime-only dev-deps are deliberately absent here, so the crate stays
   standalone-testable.

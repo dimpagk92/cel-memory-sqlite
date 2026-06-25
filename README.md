@@ -1,10 +1,14 @@
 # cel-memory-sqlite
 
+[![crates.io](https://img.shields.io/crates/v/cel-memory-sqlite.svg)](https://crates.io/crates/cel-memory-sqlite)
+[![docs.rs](https://docs.rs/cel-memory-sqlite/badge.svg)](https://docs.rs/cel-memory-sqlite)
+[![CI](https://github.com/dimpagk92/cel-memory-sqlite/actions/workflows/ci.yml/badge.svg)](https://github.com/dimpagk92/cel-memory-sqlite/actions/workflows/ci.yml)
+
 SQLite-backed local memory for AI agents. Implements
 [`cel-memory`](https://crates.io/crates/cel-memory)'s `MemoryProvider` trait with single-file storage,
 FTS, and vector search through [`sqlite-vec`](https://github.com/asg017/sqlite-vec).
 
-**Status:** v0.1 — implements the full `MemoryProvider` surface: writes, sessions, hybrid (vector + FTS + recency) retrieval fronted by a TTL+LRU cache, summarization and daily/rule-week rollups (via an injected summarizer), aging sweeps, export, and stats. `re_embed_all` is the one method still unimplemented.
+**Status:** v0.1.6 on [crates.io](https://crates.io/crates/cel-memory-sqlite) — implements the full `MemoryProvider` surface: writes, sessions, hybrid (vector + FTS + recency) retrieval fronted by a TTL+LRU cache, summarization and daily/rule-week rollups (via an injected summarizer), aging sweeps, export, and stats. `re_embed_all` is the one method still unimplemented.
 
 ## Purpose
 
@@ -44,7 +48,7 @@ let provider = SqliteMemoryProvider::open(
 Run the complete example:
 
 ```sh
-cargo run -p cel-memory-sqlite --example basic
+cargo run --example basic
 ```
 
 ## Features
