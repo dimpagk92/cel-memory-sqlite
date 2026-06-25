@@ -33,7 +33,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::cache::RetrieveCache;
-use crate::embedder::Embedder;
+use cel_memory::Embedder;
 use crate::error::SqliteMemoryError;
 use crate::migrations;
 
@@ -740,8 +740,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         let q_embedding = self
             .embedder
             .embed(&query.text)
-            .await
-            .map_err(|e| MemoryError::Storage(e.to_string()))?;
+            .await?;
         let q_text = query.text.clone();
         let conn = Arc::clone(&self.conn);
 
@@ -1124,8 +1123,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         let embedding = self
             .embedder
             .embed(&new_chunk.content)
-            .await
-            .map_err(|e| MemoryError::Storage(e.to_string()))?;
+            .await?;
         if embedding.len() != embedder_dim {
             return Err(MemoryError::Internal(format!(
                 "embedder produced dim {}, declared {}",
@@ -1255,8 +1253,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         let embeddings = self
             .embedder
             .embed_batch(&texts)
-            .await
-            .map_err(|e| MemoryError::Storage(e.to_string()))?;
+            .await?;
         if embeddings.len() != chunks.len() {
             return Err(MemoryError::Internal(format!(
                 "embedder returned {} vectors for {} inputs",
@@ -1965,8 +1962,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         let texts: Vec<String> = rows.iter().map(|(_, content)| content.clone()).collect();
         let embeddings = embedder
             .embed_batch(&texts)
-            .await
-            .map_err(|e| MemoryError::Storage(e.to_string()))?;
+            .await?;
         if embeddings.len() != total {
             return Err(MemoryError::Internal(format!(
                 "embedder returned {} vectors for {} inputs",

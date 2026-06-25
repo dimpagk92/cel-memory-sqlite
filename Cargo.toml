@@ -1,7 +1,8 @@
 [package]
 name = "cel-memory-sqlite"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2021"
+rust-version = "1.76"
 license = "Apache-2.0"
 authors = ["Dimitrios Pagkratis <dimitris@timberhub.com>"]
 homepage = "https://github.com/dimpagk92/cel-memory-sqlite"
@@ -14,7 +15,7 @@ readme = "README.md"
 
 [dependencies]
 async-trait = "0.1"
-cel-memory = "0.1.8"
+cel-memory = "0.2.0"
 chrono = { version = "0.4", features = ["serde"] }
 rusqlite = { version = "0.31", features = ["bundled", "functions"] }
 serde_json = "1"

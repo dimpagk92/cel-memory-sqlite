@@ -10,6 +10,16 @@ line at `0.1.5`.
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-25
+
+### Changed
+- **Breaking:** [`Embedder`] and [`MockEmbedder`] now live in `cel-memory` and
+  are re-exported here for backward-compatible imports.
+- Depends on `cel-memory` **0.2.0** from crates.io.
+- MSRV raised to **1.76** (`rust-version` in `Cargo.toml`).
+
+[`Embedder`]: https://docs.rs/cel-memory/latest/cel_memory/trait.Embedder.html
+
 ## [0.1.8] — 2026-06-25
 
 ### Added

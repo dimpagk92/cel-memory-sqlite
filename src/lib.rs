@@ -14,8 +14,8 @@
 //!   `memory_access_log`, `memory_eviction_log`).
 //! - `sqlite-vec` extension loaded into the connection at open time so the
 //!   `memory_vec` virtual table is available.
-//! - [`Embedder`] trait + [`MockEmbedder`] (always available) and
-//!   `FastEmbedEmbedder` (gated behind the `fastembed` feature) for the
+//! - [`Embedder`] trait + [`MockEmbedder`] from [`cel_memory`] (re-exported here)
+//!   and `FastEmbedEmbedder` (gated behind the `fastembed` feature) for the
 //!   real `bge-small-en-v1.5` model.
 //! - [`SqliteMemoryProvider`] implementing the full [`MemoryProvider`] surface:
 //!   writes, hybrid (vector + FTS + recency) retrieval with a TTL+LRU cache,

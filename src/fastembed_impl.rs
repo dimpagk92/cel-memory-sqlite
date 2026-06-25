@@ -10,10 +10,8 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
+use cel_memory::{Embedder, EmbedderError, EmbedderResult};
 use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
-
-use crate::embedder::{EmbedResult, Embedder};
-use crate::error::SqliteMemoryError;
 
 /// Default model identifier used by [`FastEmbedEmbedder::new`].
 pub const DEFAULT_MODEL_NAME: &str = "bge-small-en-v1.5";
@@ -36,9 +34,9 @@ pub struct FastEmbedEmbedder {
 impl FastEmbedEmbedder {
     /// Construct with the default model (`bge-small-en-v1.5`, 384 dim).
     /// Downloads the model file on first use; cached afterward.
-    pub fn new() -> Result<Self, SqliteMemoryError> {
+    pub fn new() -> Result<Self, EmbedderError> {
         let inner = TextEmbedding::try_new(InitOptions::new(EmbeddingModel::BGESmallENV15))
-            .map_err(|e| SqliteMemoryError::VecLoad(format!("fastembed init: {e}")))?;
+            .map_err(|e| EmbedderError::Provider(format!("fastembed init: {e}")))?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
             dim: DEFAULT_DIM,
@@ -52,9 +50,9 @@ impl FastEmbedEmbedder {
         opts: InitOptions,
         dim: usize,
         model_name: impl Into<String>,
-    ) -> Result<Self, SqliteMemoryError> {
+    ) -> Result<Self, EmbedderError> {
         let inner = TextEmbedding::try_new(opts)
-            .map_err(|e| SqliteMemoryError::VecLoad(format!("fastembed init: {e}")))?;
+            .map_err(|e| EmbedderError::Provider(format!("fastembed init: {e}")))?;
         Ok(Self {
             inner: Arc::new(Mutex::new(inner)),
             dim,
@@ -73,39 +71,40 @@ impl Embedder for FastEmbedEmbedder {
         &self.model_name
     }
 
-    async fn embed(&self, text: &str) -> EmbedResult<Vec<f32>> {
+    async fn embed(&self, text: &str) -> EmbedderResult<Vec<f32>> {
         let text = text.to_string();
         let inner = Arc::clone(&self.inner);
-        let v = tokio::task::spawn_blocking(move || -> Result<Vec<f32>, SqliteMemoryError> {
-            let mut guard = inner
-                .lock()
-                .map_err(|e| SqliteMemoryError::VecLoad(format!("mutex poisoned: {e}")))?;
+        let v = tokio::task::spawn_blocking(move || -> EmbedderResult<Vec<f32>> {
+            let mut guard = inner.lock().map_err(|e| {
+                EmbedderError::Internal(format!("mutex poisoned: {e}"))
+            })?;
             let out = guard
                 .embed(vec![text], None)
-                .map_err(|e| SqliteMemoryError::VecLoad(format!("fastembed embed: {e}")))?;
+                .map_err(|e| EmbedderError::Provider(format!("fastembed embed: {e}")))?;
             out.into_iter()
                 .next()
-                .ok_or_else(|| SqliteMemoryError::VecLoad("fastembed returned no vectors".into()))
+                .ok_or_else(|| {
+                    EmbedderError::Provider("fastembed returned no vectors".into())
+                })
         })
         .await
-        .map_err(|e| SqliteMemoryError::BlockingJoin(e.to_string()))??;
+        .map_err(|e| EmbedderError::Internal(format!("blocking task panicked: {e}")))??;
         Ok(v)
     }
 
-    async fn embed_batch(&self, texts: &[String]) -> EmbedResult<Vec<Vec<f32>>> {
+    async fn embed_batch(&self, texts: &[String]) -> EmbedderResult<Vec<Vec<f32>>> {
         let texts = texts.to_vec();
         let inner = Arc::clone(&self.inner);
-        let out =
-            tokio::task::spawn_blocking(move || -> Result<Vec<Vec<f32>>, SqliteMemoryError> {
-                let mut guard = inner
-                    .lock()
-                    .map_err(|e| SqliteMemoryError::VecLoad(format!("mutex poisoned: {e}")))?;
-                guard
-                    .embed(texts, None)
-                    .map_err(|e| SqliteMemoryError::VecLoad(format!("fastembed embed: {e}")))
-            })
-            .await
-            .map_err(|e| SqliteMemoryError::BlockingJoin(e.to_string()))??;
+        let out = tokio::task::spawn_blocking(move || -> EmbedderResult<Vec<Vec<f32>>> {
+            let mut guard = inner.lock().map_err(|e| {
+                EmbedderError::Internal(format!("mutex poisoned: {e}"))
+            })?;
+            guard
+                .embed(texts, None)
+                .map_err(|e| EmbedderError::Provider(format!("fastembed embed: {e}")))
+        })
+        .await
+        .map_err(|e| EmbedderError::Internal(format!("blocking task panicked: {e}")))??;
         Ok(out)
     }
 }
