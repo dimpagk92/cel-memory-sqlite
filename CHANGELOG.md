@@ -10,6 +10,13 @@ line at `0.1.5`.
 
 ## [Unreleased]
 
+## [0.1.7] — 2026-06-25
+
+### Changed
+- Added crates.io metadata, README badges, and Clippy in CI.
+- Depends on `cel-memory` 0.1.7 from crates.io.
+- Removed orphan MIT license file; Apache-2.0 only.
+
 ## [0.1.6] — 2026-06-25
 
 ### Added
