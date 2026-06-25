@@ -33,9 +33,9 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::cache::RetrieveCache;
-use cel_memory::Embedder;
 use crate::error::SqliteMemoryError;
 use crate::migrations;
+use cel_memory::Embedder;
 
 /// Default capacity of the per-provider retrieve cache. A "heavy" session
 /// is ~30 retrievals/min; 256 buys ~8 minutes of distinct queries before
@@ -737,10 +737,7 @@ impl MemoryProvider for SqliteMemoryProvider {
 
         let (w_vec, w_fts, w_rec, half_life_secs) = retrieval_weights(query.profile);
 
-        let q_embedding = self
-            .embedder
-            .embed(&query.text)
-            .await?;
+        let q_embedding = self.embedder.embed(&query.text).await?;
         let q_text = query.text.clone();
         let conn = Arc::clone(&self.conn);
 
@@ -1120,10 +1117,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         let embedder_name = self.embedder.model_name().to_string();
         // Embed the content. If this fails we don't store the chunk —
         // chunks without vectors don't participate in retrieval.
-        let embedding = self
-            .embedder
-            .embed(&new_chunk.content)
-            .await?;
+        let embedding = self.embedder.embed(&new_chunk.content).await?;
         if embedding.len() != embedder_dim {
             return Err(MemoryError::Internal(format!(
                 "embedder produced dim {}, declared {}",
@@ -1250,10 +1244,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         // `MockEmbedder` falls back to the trait's default impl which is
         // sequential but at least keeps the contract honest.
         let texts: Vec<String> = chunks.iter().map(|c| c.content.clone()).collect();
-        let embeddings = self
-            .embedder
-            .embed_batch(&texts)
-            .await?;
+        let embeddings = self.embedder.embed_batch(&texts).await?;
         if embeddings.len() != chunks.len() {
             return Err(MemoryError::Internal(format!(
                 "embedder returned {} vectors for {} inputs",
@@ -1960,9 +1951,7 @@ impl MemoryProvider for SqliteMemoryProvider {
         }
 
         let texts: Vec<String> = rows.iter().map(|(_, content)| content.clone()).collect();
-        let embeddings = embedder
-            .embed_batch(&texts)
-            .await?;
+        let embeddings = embedder.embed_batch(&texts).await?;
         if embeddings.len() != total {
             return Err(MemoryError::Internal(format!(
                 "embedder returned {} vectors for {} inputs",

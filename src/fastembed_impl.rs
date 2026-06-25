@@ -75,17 +75,15 @@ impl Embedder for FastEmbedEmbedder {
         let text = text.to_string();
         let inner = Arc::clone(&self.inner);
         let v = tokio::task::spawn_blocking(move || -> EmbedderResult<Vec<f32>> {
-            let mut guard = inner.lock().map_err(|e| {
-                EmbedderError::Internal(format!("mutex poisoned: {e}"))
-            })?;
+            let mut guard = inner
+                .lock()
+                .map_err(|e| EmbedderError::Internal(format!("mutex poisoned: {e}")))?;
             let out = guard
                 .embed(vec![text], None)
                 .map_err(|e| EmbedderError::Provider(format!("fastembed embed: {e}")))?;
             out.into_iter()
                 .next()
-                .ok_or_else(|| {
-                    EmbedderError::Provider("fastembed returned no vectors".into())
-                })
+                .ok_or_else(|| EmbedderError::Provider("fastembed returned no vectors".into()))
         })
         .await
         .map_err(|e| EmbedderError::Internal(format!("blocking task panicked: {e}")))??;
@@ -96,9 +94,9 @@ impl Embedder for FastEmbedEmbedder {
         let texts = texts.to_vec();
         let inner = Arc::clone(&self.inner);
         let out = tokio::task::spawn_blocking(move || -> EmbedderResult<Vec<Vec<f32>>> {
-            let mut guard = inner.lock().map_err(|e| {
-                EmbedderError::Internal(format!("mutex poisoned: {e}"))
-            })?;
+            let mut guard = inner
+                .lock()
+                .map_err(|e| EmbedderError::Internal(format!("mutex poisoned: {e}")))?;
             guard
                 .embed(texts, None)
                 .map_err(|e| EmbedderError::Provider(format!("fastembed embed: {e}")))
