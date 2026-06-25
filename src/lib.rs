@@ -21,7 +21,8 @@
 //!   writes, hybrid (vector + FTS + recency) retrieval with a TTL+LRU cache,
 //!   sessions, summarization and rollups (via an injected
 //!   [`cel_memory::Summarizer`]), aging sweeps, export, and stats. The only
-//!   method still returning `Err(NotImplemented)` is `re_embed_all`.
+//!   `re_embed_all` re-embeds stored vectors when the target model matches
+//!   the configured [`Embedder`].
 //!
 //! [`MemoryProvider`]: cel_memory::MemoryProvider
 

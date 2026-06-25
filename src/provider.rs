@@ -9,7 +9,8 @@
 //!   [`cel_memory::Summarizer`] (these return `Err(NotImplemented)` only when
 //!   no summarizer is attached).
 //! - `run_aging_sweep` and `export`.
-//! - `re_embed_all` is the one method still returning `Err(NotImplemented)`.
+//! - `re_embed_all` re-embeds every stored chunk against the configured
+//!   [`Embedder`] when `target_model` matches [`Embedder::model_name`].
 //!
 //! The provider is `Send + Sync` and lives behind an `Arc<dyn MemoryProvider>` —
 //! the same surface as [`BasicMemoryProvider`], so swapping it in is one line.
@@ -1913,10 +1914,109 @@ impl MemoryProvider for SqliteMemoryProvider {
         .await
         .map_err(|e| MemoryError::Internal(format!("join: {e}")))?
     }
-    async fn re_embed_all(&self, _target_model: &str) -> MemoryResult<ReEmbedReport> {
-        Err(MemoryError::NotImplemented(
-            "SqliteMemoryProvider::re_embed_all — Phase 4",
-        ))
+    async fn re_embed_all(&self, target_model: &str) -> MemoryResult<ReEmbedReport> {
+        let started = std::time::Instant::now();
+        if self.embedder.model_name() != target_model {
+            return Err(MemoryError::InvalidArgument(format!(
+                "configured embedder is '{}', re_embed_all target_model is '{}'",
+                self.embedder.model_name(),
+                target_model
+            )));
+        }
+        self.invalidate_retrieve_cache();
+
+        let embedder = Arc::clone(&self.embedder);
+        let embedder_dim = embedder.dim();
+        let embedder_name = embedder.model_name().to_string();
+        let conn = Arc::clone(&self.conn);
+
+        let rows: Vec<(String, String)> =
+            tokio::task::spawn_blocking(move || -> Result<Vec<(String, String)>, MemoryError> {
+                let guard = conn.blocking_lock();
+                let mut stmt = guard
+                    .prepare(
+                        "SELECT id, content FROM memory_chunks
+                     WHERE embedding_model != 'none'
+                     ORDER BY created_at ASC",
+                    )
+                    .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                let mapped = stmt
+                    .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
+                    .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                let mut out = Vec::new();
+                for row in mapped {
+                    out.push(row.map_err(|e| MemoryError::Storage(e.to_string()))?);
+                }
+                Ok(out)
+            })
+            .await
+            .map_err(|e| MemoryError::Internal(format!("join: {e}")))??;
+
+        let total = rows.len();
+        if total == 0 {
+            return Ok(ReEmbedReport {
+                total: 0,
+                succeeded: 0,
+                failed: 0,
+                elapsed_ms: started.elapsed().as_millis() as u64,
+            });
+        }
+
+        let texts: Vec<String> = rows.iter().map(|(_, content)| content.clone()).collect();
+        let embeddings = embedder
+            .embed_batch(&texts)
+            .await
+            .map_err(|e| MemoryError::Storage(e.to_string()))?;
+        if embeddings.len() != total {
+            return Err(MemoryError::Internal(format!(
+                "embedder returned {} vectors for {} inputs",
+                embeddings.len(),
+                total
+            )));
+        }
+
+        let conn = Arc::clone(&self.conn);
+        let (succeeded, failed) =
+            tokio::task::spawn_blocking(move || -> Result<(usize, usize), MemoryError> {
+                let mut guard = conn.blocking_lock();
+                let tx = guard
+                    .transaction()
+                    .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                let mut succeeded = 0usize;
+                let mut failed = 0usize;
+                for (i, (id, _)) in rows.iter().enumerate() {
+                    let embedding = &embeddings[i];
+                    if embedding.len() != embedder_dim {
+                        failed += 1;
+                        continue;
+                    }
+                    let v_json = serde_json::to_string(embedding)
+                        .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                    tx.execute(
+                    "UPDATE memory_chunks SET embedding_model = ?, embedding_dim = ? WHERE id = ?",
+                    params![embedder_name, embedder_dim as i64, id],
+                )
+                .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                    tx.execute(
+                        "UPDATE memory_vec SET embedding = ? WHERE chunk_id = ?",
+                        params![v_json, id],
+                    )
+                    .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                    succeeded += 1;
+                }
+                tx.commit()
+                    .map_err(|e| MemoryError::Storage(e.to_string()))?;
+                Ok((succeeded, failed))
+            })
+            .await
+            .map_err(|e| MemoryError::Internal(format!("join: {e}")))??;
+
+        Ok(ReEmbedReport {
+            total,
+            succeeded,
+            failed,
+            elapsed_ms: started.elapsed().as_millis() as u64,
+        })
     }
     async fn export(&self, filter: ExportFilter) -> MemoryResult<ExportBundle> {
         let conn = Arc::clone(&self.conn);

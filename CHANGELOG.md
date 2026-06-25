@@ -10,6 +10,15 @@ line at `0.1.5`.
 
 ## [Unreleased]
 
+## [0.1.8] — 2026-06-25
+
+### Added
+- `re_embed_all` bulk re-embedding for stored chunks when the target model
+  matches the configured [`Embedder`].
+
+### Changed
+- Depends on `cel-memory` 0.1.8 from crates.io.
+
 ## [0.1.7] — 2026-06-25
 
 ### Changed
@@ -22,8 +31,6 @@ line at `0.1.5`.
 ### Added
 - Standalone GitHub repository at `https://github.com/dimpagk92/cel-memory-sqlite`.
 - Published as a standalone crate on crates.io.
-
-### Notes
 - `re_embed_all` remains unimplemented in this release.
 
 ## [0.1.0-pre] — 2026-05-23

@@ -1406,3 +1406,46 @@ async fn rollup_day_excludes_existing_rollup_chunks_from_input() {
         "forced re-run should still see only the original chunk, not the prior rollup"
     );
 }
+
+#[tokio::test]
+async fn re_embed_all_updates_vectors_and_metadata() {
+    let embedder = Arc::new(MockEmbedder::new());
+    let provider = SqliteMemoryProvider::open_in_memory(embedder.clone())
+        .await
+        .unwrap();
+
+    let chunk = provider.write(nc("embedded", "hello world")).await.unwrap();
+    assert_eq!(chunk.embedding_model, "mock-384");
+
+    let before = provider
+        .retrieve(retrieve_q("embedded", "hello"))
+        .await
+        .unwrap();
+    assert_eq!(before.len(), 1);
+
+    let report = provider.re_embed_all("mock-384").await.unwrap();
+    assert_eq!(report.total, 1);
+    assert_eq!(report.succeeded, 1);
+    assert_eq!(report.failed, 0);
+
+    let got = provider.get(&chunk.id).await.unwrap().unwrap();
+    assert_eq!(got.embedding_model, "mock-384");
+
+    let after = provider
+        .retrieve(retrieve_q("embedded", "hello"))
+        .await
+        .unwrap();
+    assert_eq!(after.len(), 1);
+}
+
+#[tokio::test]
+async fn re_embed_all_rejects_mismatched_target_model() {
+    let embedder = Arc::new(MockEmbedder::new());
+    let provider = SqliteMemoryProvider::open_in_memory(embedder)
+        .await
+        .unwrap();
+    provider.write(nc("embedded", "hello")).await.unwrap();
+
+    let err = provider.re_embed_all("other-model").await.unwrap_err();
+    assert!(matches!(err, MemoryError::InvalidArgument(_)));
+}
