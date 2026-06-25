@@ -1,25 +1,25 @@
 [package]
 name = "cel-memory-sqlite"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
+version = "0.1.6"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/dimpagk92/cel-memory-sqlite"
 description = "SQLite-backed local memory for AI agents, implementing cel-memory with FTS and vector search."
 keywords = ["ai", "memory", "sqlite", "vector-search", "embedding"]
 categories = ["asynchronous", "database"]
 readme = "README.md"
 
 [dependencies]
-async-trait.workspace = true
-cel-memory = { path = "../cel-memory", version = "0.1.5" }
-chrono = { workspace = true, features = ["serde"] }
-rusqlite = { workspace = true, features = ["functions"] }
-serde_json.workspace = true
+async-trait = "0.1"
+cel-memory = "0.1.5"
+chrono = { version = "0.4", features = ["serde"] }
+rusqlite = { version = "0.31", features = ["bundled", "functions"] }
+serde_json = "1"
 sqlite-vec = "0.1"
-thiserror.workspace = true
-tokio = { workspace = true }
-tracing.workspace = true
-uuid = { workspace = true, features = ["v7", "serde"] }
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+uuid = { version = "1", features = ["v7", "serde"] }
 zerocopy = "0.7"
 
 # fastembed pulls in onnxruntime + tokenizers; gated behind a feature so
@@ -32,9 +32,9 @@ default = []
 fastembed = ["dep:fastembed"]
 
 [dev-dependencies]
-chrono = { workspace = true, features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 tempfile = "3"
-tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
 # NOTE: runtime-only crates are intentionally not dev-deps here. Integration
 # tests that need a full runtime should live downstream; keeping them out keeps
 # this crate standalone-testable with only cel-memory + storage deps.

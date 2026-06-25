@@ -1,7 +1,7 @@
 # cel-memory-sqlite
 
 SQLite-backed local memory for AI agents. Implements
-[`cel-memory`](../cel-memory)'s `MemoryProvider` trait with single-file storage,
+[`cel-memory`](https://crates.io/crates/cel-memory)'s `MemoryProvider` trait with single-file storage,
 FTS, and vector search through [`sqlite-vec`](https://github.com/asg017/sqlite-vec).
 
 **Status:** v0.1 — implements the full `MemoryProvider` surface: writes, sessions, hybrid (vector + FTS + recency) retrieval fronted by a TTL+LRU cache, summarization and daily/rule-week rollups (via an injected summarizer), aging sweeps, export, and stats. `re_embed_all` is the one method still unimplemented.
