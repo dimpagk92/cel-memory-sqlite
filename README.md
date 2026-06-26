@@ -8,7 +8,7 @@ SQLite-backed local memory for AI agents. Implements
 [`cel-memory`](https://crates.io/crates/cel-memory)'s `MemoryProvider` trait with single-file storage,
 FTS, and vector search through [`sqlite-vec`](https://github.com/asg017/sqlite-vec).
 
-**Status:** v0.1.8 on [crates.io](https://crates.io/crates/cel-memory-sqlite) — implements the full `MemoryProvider` surface: writes, sessions, hybrid (vector + FTS + recency) retrieval fronted by a TTL+LRU cache, summarization and daily/rule-week rollups (via an injected summarizer), aging sweeps, export, stats, and bulk re-embed.
+**Status:** v0.2.0 on [crates.io](https://crates.io/crates/cel-memory-sqlite) — implements the full `MemoryProvider` surface: writes, sessions, hybrid (vector + FTS + recency) retrieval fronted by a TTL+LRU cache, summarization and daily/rule-week rollups (via an injected summarizer), aging sweeps, export, stats, and bulk re-embed.
 
 ## Purpose
 
@@ -20,7 +20,7 @@ durable memory in one SQLite file.
 ## What's Included
 
 - `SqliteMemoryProvider` — `MemoryProvider` impl backed by SQLite (one file, no separate process).
-- `Embedder` trait + `MockEmbedder` (always available).
+- `Embedder` / `MockEmbedder` — re-exported from [`cel-memory`](https://crates.io/crates/cel-memory) (since 0.2.0).
 - `FastEmbedEmbedder` behind the `fastembed` feature — local ONNX runtime + `bge-small-en-v1.5` (~130 MB model download).
 - Schema migrations for `memory_chunks`, `memory_vec` (sqlite-vec virtual table), `memory_fts` (FTS5), sessions, access log, eviction log.
 - `sqlite-vec` extension loaded at connection open; the `memory_vec` virtual table is available without extra setup.
@@ -54,6 +54,12 @@ cargo run --example basic
 ## Features
 
 - `fastembed` — enables `FastEmbedEmbedder` for local embeddings. Off by default to avoid the 130 MB model download in dev workflows.
+
+## Upgrading from 0.1.x
+
+Depends on **`cel-memory` 0.2.0**; import `Embedder` from `cel_memory` or keep
+using the sqlite re-export. See the
+**[0.2 migration guide](https://github.com/dimpagk92/cellar/blob/sync/main-from-private-2026-06-10/docs/migration-0.2.md)**.
 
 ## License
 
