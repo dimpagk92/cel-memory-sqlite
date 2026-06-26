@@ -10,6 +10,12 @@ line at `0.1.5`.
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-06-25
+
+### Changed
+- Depends on `cel-memory` **0.2.1** from crates.io.
+- Integration tests run the full conformance harness (retrieve, sessions, summarizer roundtrip).
+
 ## [0.2.0] — 2026-06-25
 
 ### Changed

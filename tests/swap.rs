@@ -8,23 +8,32 @@
 
 use std::sync::Arc;
 
-use cel_memory::{assert_write_get_stats, MemoryProvider};
+use cel_memory::{
+    assert_retrieve_finds_written, assert_session_lifecycle, assert_summarize_session_roundtrip,
+    assert_write_get_stats, MemoryProvider, MockSummarizer,
+};
 use cel_memory_sqlite::{MockEmbedder, SqliteMemoryProvider};
 
 #[tokio::test]
 async fn sqlite_provider_works_through_locked_trait() {
-    // Exercise the trait surface (Arc<dyn MemoryProvider>), not the
-    // concrete type. This is the contract every backend honors.
     let embedder = Arc::new(MockEmbedder::new());
+    let summarizer = MockSummarizer::new("session synthesis");
     let memory: Arc<dyn MemoryProvider> = Arc::new(
         SqliteMemoryProvider::open_in_memory(embedder)
             .await
-            .unwrap(),
+            .unwrap()
+            .with_summarizer(summarizer),
     );
 
-    let (_chunk, stats) = assert_write_get_stats(memory, "user asked about the Q4 report")
+    let (_chunk, stats) = assert_write_get_stats(memory.clone(), "user asked about the Q4 report")
         .await
         .unwrap();
     assert_eq!(stats.total_chunks, 1);
     assert_eq!(stats.embedding_model.as_deref(), Some("mock-384"));
+
+    assert_retrieve_finds_written(memory.clone(), "Q4 revenue forecast")
+        .await
+        .unwrap();
+    assert_session_lifecycle(memory.clone()).await.unwrap();
+    assert_summarize_session_roundtrip(memory).await.unwrap();
 }
